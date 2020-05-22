@@ -50,6 +50,13 @@
             ReferencedContainer = "container:coronavirus-stats.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "MAPS_API"
+            value = "AIzaSyC7t6460LgKv2u1J4vvAgoxmvZWq3TOYDc"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

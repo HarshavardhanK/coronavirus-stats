@@ -7,10 +7,12 @@
 //
 
 import UIKit
+import CoreLocation
+
 import Alamofire
 import SwiftyJSON
 
-class HomeViewController: UIViewController {
+class HomeViewController: UIViewController, CLLocationManagerDelegate {
     
     //MARK:- UI Elements
     
@@ -19,30 +21,68 @@ class HomeViewController: UIViewController {
     @IBOutlet var confirmedDead: UILabel!
     @IBOutlet var confirmedPositive: UILabel!
     
+    //MARK:- VARIABLES
+    let locationManager = CLLocationManager()
     
-    let URL = "https://api.covid19india.org/state_district_wise.json"
-
+    
+    let DISTRICT_URL = "https://us-central1-covid19updates-8d9d1.cloudfunctions.net/district_data?"
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        locationManager.delegate = self
+        locationManager.requestWhenInUseAuthorization()
 
         // Do any additional setup after loading the view.
-        fetchData(url: URL)
+        fetchData(url: DISTRICT_URL)
+        
     }
     
+    func getLocation() -> CLLocation? {
+        
+        var currentLocation: CLLocation!
+        
+        if(CLLocationManager.authorizationStatus() == .authorizedWhenInUse
+            || CLLocationManager.authorizationStatus() == .authorizedAlways) {
+            
+            currentLocation = locationManager.location
+            
+            return currentLocation
+        }
+        
+        if(CLLocationManager.authorizationStatus() == .denied) {
+            locationManager.requestWhenInUseAuthorization()
+        }
+        
+        print("Could not access your location")
+        
+        return nil
+    }
+    
+    
     func fetchData(url: String) {
+        
+        guard let location = getLocation() else {
+            return
+        }
+        
+        let url = DISTRICT_URL + "latitude=\(location.coordinate.latitude)&longitude=\(location.coordinate.longitude)"
         
         let request = AF.request(url)
         
         request.responseJSON { (data) in
-            let json = JSON(data.value)
-            let district = json["Karnataka"]["districtData"]["Udupi"]
             
-            let caseCount = Case(data: district)
-            let home = Home(name: "Udupi", caseCount_: caseCount)
+            guard let value = data.value else {
+                return
+            }
             
-            print("\(home.caseCount?.totalPositive)) have been reported positive in Udupi")
+            let json = JSON(value)
+            let district = json["district"].stringValue
+          
+            let caseCount = Case(data: json)
+            let home = Home(name: district, caseCount_: caseCount)
             
-            self.districtLabel.text = "Udupi"
+            self.districtLabel.text = district
             
             if let positive = home.caseCount?.totalPositive {
                 self.confirmedPositive.text = "\(String(describing: positive))"
@@ -55,7 +95,6 @@ class HomeViewController: UIViewController {
             if let recovered = home.caseCount?.totalRecovered {
                 self.confirmedRecovered.text = "\(String(describing: recovered))"
             }
-            
             
         }
     }
